@@ -77,12 +77,6 @@ public class AppDownLoadManager {
             }
         };
 
-        /**
-         * 默认都分配tag
-         */
-        if(helper.mTag == null) {
-            helper.mTag = UUID.randomUUID().toString();
-        }
         mTagToHelpers.put(helper.mTag, helper);
     }
 

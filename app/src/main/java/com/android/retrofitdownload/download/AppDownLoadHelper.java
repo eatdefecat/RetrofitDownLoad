@@ -1,7 +1,6 @@
 package com.android.retrofitdownload.download;
 
 import android.util.Log;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -9,6 +8,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import okhttp3.OkHttpClient;
 import okhttp3.ResponseBody;
@@ -16,9 +16,7 @@ import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
 import rx.Subscriber;
-import rx.Subscription;
 import rx.schedulers.Schedulers;
-import rx.subscriptions.CompositeSubscription;
 
 public class AppDownLoadHelper {
 
@@ -26,7 +24,9 @@ public class AppDownLoadHelper {
 
     public static final int READ_DOWN_TIMEOUT = 20;
 
-    public static final String DOWNLOAD_BASE_URL = "http://dl.play.91.com/bigdata/";
+    public String mBaseUrl;
+
+    public String mApkName;
 
     public Set<AppProgressListener> mDownloadListeners;
 
@@ -59,6 +59,27 @@ public class AppDownLoadHelper {
         isCancel = cancel;
     }
 
+    public void setmUrl(String url) {
+        if(url != null){
+            int lastIndex = url.lastIndexOf("/");
+            if(lastIndex != -1){
+                mApkName = url.substring(lastIndex + 1);
+                mBaseUrl = url.substring(0, lastIndex + 1);
+            }
+        }
+    }
+
+    /**
+     * 默认分配tag
+     */
+    public void setTag(Object tag) {
+        if(tag != null) {
+            mTag = tag;
+        }else{
+            mTag = UUID.randomUUID().toString();
+        }
+    }
+
     public void registerListener(AppProgressListener listener) {
         mDownloadListeners.add(listener);
     }
@@ -80,6 +101,7 @@ public class AppDownLoadHelper {
         builder.readTimeout(mReadTimeout, TimeUnit.SECONDS);
         return builder;
     }
+
 
     public static class Builder {
         private AppProgressListener mListener;
@@ -150,8 +172,8 @@ public class AppDownLoadHelper {
             helper.mConnectionTimeout = mConnectionTimeout;
             helper.mReadTimeout = mReadTimeout;
             helper.mPath = mPath;
-            helper.mTag = mTag;
-            helper.mUrl = mUrl;
+            helper.setTag(mTag);
+            helper.setmUrl(mUrl);
             if(mListener != null) {
                 helper.mDownloadListeners.add(mListener);
             }
@@ -164,7 +186,7 @@ public class AppDownLoadHelper {
         mManager.addHelper(this);
 
         mAdapter = new Retrofit.Builder()
-                .baseUrl(DOWNLOAD_BASE_URL)
+                .baseUrl(mBaseUrl)
                 .addConverterFactory(GsonConverterFactory.create())
                 .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
                 .client(getDefaultOkHttp())
@@ -173,7 +195,7 @@ public class AppDownLoadHelper {
         mUploadService = mAdapter.create(AppDownloadService.class);
 
         final long startTime = System.currentTimeMillis();
-        Subscription subscribe = mUploadService.download(mUrl)
+        mUploadService.download(mApkName)
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
                 .subscribe(new Subscriber<ResponseBody>() {
@@ -196,7 +218,7 @@ public class AppDownLoadHelper {
 
                     @Override
                     public void onNext(ResponseBody responseBody) {
-                        Log.i("tag", "========next" + responseBody.contentLength());
+                        Log.i("AppDownLoadHelper", "========next" + responseBody.contentLength());
 
                         OutputStream output = null;
                         InputStream input = null;
@@ -230,7 +252,7 @@ public class AppDownLoadHelper {
                         }
 
                         long endTime = System.currentTimeMillis();
-                        Log.i("tag", "========time" + (endTime - startTime));
+                        Log.i("AppDownLoadHelper", "========time" + (endTime - startTime));
                     }
                 });
 

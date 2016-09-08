@@ -48,11 +48,12 @@ public class MainActivity extends AppCompatActivity {
             new AppDownLoadHelper.Builder()
                     .setPath(SDCardUtil.getLogCacheDir(AppApplication.getContext()) + "/xxx1.apk")
                     .setTag("xx")
-                    .setUrl("com.ilongyuan.voez.baidu_v1.0.4.apk")
+                    .setUrl("http://dl.play.91.com/bigdata/com.ilongyuan.voez.baidu_v1.0.4.apk")
                     .setDownLoadListener(new AppProgressListener() {
                         @Override
                         public void onStart() {
                             Log.i("tag", "========开始");
+                            mDownButton.setText("0%");
                         }
 
                         @Override
